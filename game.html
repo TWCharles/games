@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>數字矩陣遊戲</title>
+<title>game</title>
 <style>
 body {
 font-family: Arial, sans-serif;
@@ -148,10 +148,10 @@ this.updateStatus();
 updateStatus() {
 const statusElement = document.getElementById('status');
 if (this.isWon) {
-statusElement.textContent = '恭喜你贏了！';
+statusElement.textContent = 'WELL DONE';
 statusElement.classList.add('win');
 } else {
-statusElement.textContent = '遊戲進行中';
+statusElement.textContent = 'ON-GOING';
 statusElement.classList.remove('win');
 }
 }
