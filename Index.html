@@ -1,164 +1,288 @@
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>game</title>
-<style>
-body {
-font-family: Arial, sans-serif;
-display: flex;
-justify-content: center;
-align-items: center;
-height: 100vh;
-margin: 0;
-background-color: #f0f0f0;
-}
-#game {
-background-color: white;
-padding: 20px;
-border-radius: 10px;
-box-shadow: 0 0 10px rgba(0,0,0,0.1);
-}
-table {
-border-collapse: collapse;
-}
-td {
-width: 40px;
-height: 40px;
-text-align: center;
-border: 1px solid #ccc;
-cursor: pointer;
-transition: background-color 0.3s;
-}
-.target {
-background-color: #e0e0e0;
-font-weight: bold;
-}
-.selected {
-background-color: #ffff00;
-}
-#status {
-text-align: center;
-font-size: 18px;
-font-weight: bold;
-margin-bottom: 10px;
-height: 24px;
-}
-.win {
-color: #4CAF50;
-}
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>數字矩陣遊戲</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        #game {
+            background-color: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        table {
+            border-collapse: collapse;
+        }
+        td {
+            width: 40px;
+            height: 40px;
+            text-align: center;
+            border: 1px solid #ccc;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        .target {
+            background-color: #e0e0e0;
+            font-weight: bold;
+        }
+        .selected {
+            background-color: #ffff00;
+        }
+        .current-sum {
+            background-color: #f0f0f0;
+            font-weight: bold;
+        }
+        #status {
+            text-align: center;
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 10px;
+            height: 24px;
+        }
+        .win {
+            color: #4CAF50;
+        }
+        #tabs {
+            display: flex;
+            justify-content: center;
+            margin-top: 10px;
+        }
+        .tab {
+            padding: 5px 10px;
+            margin: 0 5px;
+            cursor: pointer;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+        .tab.active {
+            background-color: #e0e0e0;
+        }
+        #rule {
+        text-align: center;
+        margin-top: 10px;
+        font-style: italic;
+        max-width: 300px; /* 調整這個值以適應你的佈局 */
+        margin-left: auto;
+        margin-right: auto;
+        white-space: normal;
+        word-wrap: break-word;
+    } font-style: italic;
+        }
+    </style>
 </head>
 <body>
-<div id="game">
-<div id="status"></div>
-<div id="matrix"></div>
-</div>
-<script>
-class Game {
-constructor() {
-this.size = 5;
-this.matrixA = []; // 存儲數字
-this.matrixB = []; // 記錄選中狀態
-this.playerSelection = []; // 玩家的選擇
-this.rowTargets = [];
-this.colTargets = [];
-this.isWon = false;
-}
+    <div id="game">
+        <div id="status"></div>
+        <div id="matrix"></div>
+        <div id="tabs">
+            <div class="tab active" onclick="game.switchMode('+')">&plus;</div>
+            <div class="tab" onclick="game.switchMode('Ø')">Ø</div>
+        </div>
+        <div id="rule"></div>
+    </div>
+    <script>
+        class Game {
+            constructor() {
+                this.size = 4;
+                this.matrixA = [];
+                this.matrixB = [];
+                this.matrixC = [];
+                this.playerSelection = [];
+                this.playerSelectionOrder = [];
+                this.rowTargets = [];
+                this.colTargets = [];
+                this.isWon = false;
+                this.mode = '+';
+            }
 
-init() {
-this.generateMatrices();
-this.calculateTargets();
-this.initPlayerSelection();
-this.render();
-}
+            init() {
+                do {
+                    this.generateMatrices();
+                    this.calculateTargets();
+                } while (this.hasZeroTarget());
+                this.initPlayerSelection();
+                this.render();
+                this.updateRule();
+            }
 
-generateMatrices() {
-for (let i = 0; i < this.size; i++) {
-this.matrixA[i] = [];
-this.matrixB[i] = [];
-for (let j = 0; j < this.size; j++) {
-this.matrixA[i][j] = Math.floor(Math.random() * 10) + 1;
-this.matrixB[i][j] = Math.random() < 0.5; // 隨機選擇正確答案
-}
-}
-}
+            generateMatrices() {
+                for (let i = 0; i < this.size; i++) {
+                    this.matrixA[i] = [];
+                    this.matrixB[i] = [];
+                    this.matrixC[i] = [];
+                    let order = 1;
+                    for (let j = 0; j < this.size; j++) {
+                        this.matrixA[i][j] = Math.floor(Math.random() * 9) + 1;
+                        this.matrixB[i][j] = Math.random() < 0.5 ? order++ : 0;
+                        this.matrixC[i][j] = this.matrixB[i][j] > 0 ? this.matrixA[i][j] : 0;
+                    }
+                }
+            }
 
-initPlayerSelection() {
-this.playerSelection = Array(this.size).fill().map(() => Array(this.size).fill(false));
-}
+            calculateTargets() {
+                this.rowTargets = [];
+                this.colTargets = [];
+                for (let i = 0; i < this.size; i++) {
+                    let rowNumbers = [];
+                    for (let j = 0; j < this.size; j++) {
+                        if (this.matrixB[i][j] > 0) {
+                            rowNumbers.push(this.matrixA[i][j]);
+                        }
+                    }
+                    rowNumbers.sort((a, b) => this.matrixB[i].indexOf(a) - this.matrixB[i].indexOf(b));
+                    this.rowTargets[i] = this.mode === '+' ? 
+                        rowNumbers.reduce((a, b) => a + b, 0) : 
+                        this.calculateØTarget(rowNumbers);
+                }
+                for (let j = 0; j < this.size; j++) {
+                    let colSum = 0;
+                    for (let i = 0; i < this.size; i++) {
+                        if (this.matrixB[i][j] > 0) {
+                            colSum += this.matrixA[i][j];
+                        }
+                    }
+                    this.colTargets[j] = colSum;
+                }
+            }
 
-calculateTargets() {
-for (let i = 0; i < this.size; i++) {
-let rowSum = 0;
-let colSum = 0;
-for (let j = 0; j < this.size; j++) {
-if (this.matrixB[i][j]) rowSum += this.matrixA[i][j];
-if (this.matrixB[j][i]) colSum += this.matrixA[j][i];
-}
-this.rowTargets[i] = rowSum;
-this.colTargets[i] = colSum;
-}
-}
+            hasZeroTarget() {
+                return this.rowTargets.some(target => target === 0) || this.colTargets.some(target => target === 0);
+            }
 
-render() {
-let html = '<table>';
-html += '<tr><td></td>';
-for (let i = 0; i < this.size; i++) {
-html += `<td class="target">${this.colTargets[i]}</td>`;
-}
-html += '</tr>';
-for (let i = 0; i < this.size; i++) {
-html += '<tr>';
-html += `<td class="target">${this.rowTargets[i]}</td>`;
-for (let j = 0; j < this.size; j++) {
-let cellClass = this.playerSelection[i][j] ? 'selected' : '';
-html += `<td class="${cellClass}" onclick="game.toggleCell(${i}, ${j})">${this.matrixA[i][j]}</td>`;
-}
-html += '</tr>';
-}
-html += '</table>';
-document.getElementById('matrix').innerHTML = html;
-this.updateStatus();
-}
+            calculateØTarget(numbers) {
+                if (numbers.length === 0) return 0;
+                return numbers.reduce((acc, curr) => {
+                    const min = Math.min(acc, curr);
+                    const max = Math.max(acc, curr);
+                    return min + Math.floor(max / min);
+                });
+            }
 
-toggleCell(row, col) {
-if (!this.isWon) {
-this.playerSelection[row][col] = !this.playerSelection[row][col];
-this.render();
-this.checkWin();
-}
-}
+            initPlayerSelection() {
+                this.playerSelection = Array(this.size).fill().map(() => Array(this.size).fill(false));
+                this.playerSelectionOrder = Array(this.size).fill().map(() => []);
+            }
 
-checkWin() {
-for (let i = 0; i < this.size; i++) {
-let rowSum = 0;
-let colSum = 0;
-for (let j = 0; j < this.size; j++) {
-if (this.playerSelection[i][j]) rowSum += this.matrixA[i][j];
-if (this.playerSelection[j][i]) colSum += this.matrixA[j][i];
-}
-if (rowSum !== this.rowTargets[i] || colSum !== this.colTargets[i]) return;
-}
-this.isWon = true;
-this.updateStatus();
-}
+            calculateCurrentSums() {
+                let rowSums = Array(this.size).fill(0);
+                let colSums = Array(this.size).fill(0);
+                for (let i = 0; i < this.size; i++) {
+                    if (this.mode === '+') {
+                        rowSums[i] = this.playerSelectionOrder[i].reduce((a, b) => a + b, 0);
+                    } else {
+                        rowSums[i] = this.calculateØTarget(this.playerSelectionOrder[i]);
+                    }
+                    for (let j = 0; j < this.size; j++) {
+                        if (this.playerSelection[i][j]) {
+                            colSums[j] += this.matrixA[i][j];
+                        }
+                    }
+                }
+                return { rowSums, colSums };
+            }
 
-updateStatus() {
-const statusElement = document.getElementById('status');
-if (this.isWon) {
-statusElement.textContent = 'WELL DONE';
-statusElement.classList.add('win');
-} else {
-statusElement.textContent = 'ON-GOING';
-statusElement.classList.remove('win');
-}
-}
-}
+            render() {
+                const { rowSums, colSums } = this.calculateCurrentSums();
+                let html = '<table>';
+                html += '<tr><td></td>';
+                for (let i = 0; i < this.size; i++) {
+                    html += `<td class="target">${this.colTargets[i]}</td>`;
+                }
+                html += '<td></td></tr>';
+                for (let i = 0; i < this.size; i++) {
+                    html += '<tr>';
+                    html += `<td class="target">${this.rowTargets[i]}</td>`;
+                    for (let j = 0; j < this.size; j++) {
+                        let cellClass = this.playerSelection[i][j] ? 'selected' : '';
+                        html += `<td class="${cellClass}" onclick="game.toggleCell(${i}, ${j})">${this.matrixA[i][j]}</td>`;
+                    }
+                    html += `<td class="current-sum">${rowSums[i]}</td>`;
+                    html += '</tr>';
+                }
+                html += '<tr><td></td>';
+                for (let i = 0; i < this.size; i++) {
+                    html += `<td class="current-sum">${colSums[i]}</td>`;
+                }
+                html += '<td></td></tr>';
+                html += '</table>';
+                document.getElementById('matrix').innerHTML = html;
+                this.updateStatus();
+            }
 
-const game = new Game();
-game.init();
-</script>
+            toggleCell(row, col) {
+                if (!this.isWon) {
+                    if (this.playerSelection[row][col]) {
+                        this.playerSelection[row][col] = false;
+                        this.playerSelectionOrder[row] = this.playerSelectionOrder[row].filter(num => num !== this.matrixA[row][col]);
+                    } else {
+                        this.playerSelection[row][col] = true;
+                        this.playerSelectionOrder[row].push(this.matrixA[row][col]);
+                    }
+                    this.playerSelectionOrder[row] = this.playerSelectionOrder[row].sort((a, b) => 
+                        this.matrixB[row].indexOf(a) - this.matrixB[row].indexOf(b)
+                    );
+                    this.render();
+                    this.checkWin();
+                }
+            }
+
+            checkWin() {
+                const { rowSums, colSums } = this.calculateCurrentSums();
+                for (let i = 0; i < this.size; i++) {
+                    if (rowSums[i] !== this.rowTargets[i] || colSums[i] !== this.colTargets[i]) return;
+                }
+                this.isWon = true;
+                this.updateStatus();
+            }
+
+            updateStatus() {
+                const statusElement = document.getElementById('status');
+                if (this.isWon) {
+                    statusElement.textContent = 'WELL DONE';
+                    statusElement.classList.add('win');
+                } else {
+                    statusElement.textContent = 'KEEP GOING';
+                    statusElement.classList.remove('win');
+                }
+            }
+
+            switchMode(newMode) {
+                this.mode = newMode;
+                this.isWon = false;
+                do {
+                    this.generateMatrices();
+                    this.calculateTargets();
+                } while (this.hasZeroTarget());
+                this.initPlayerSelection();
+                this.render();
+                this.updateRule();
+                document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
+                document.querySelector(`.tab:nth-child(${newMode === '+' ? 1 : 2})`).classList.add('active');
+            }
+
+
+			updateRule() {
+    const ruleElement = document.getElementById('rule');
+    if (this.mode === '+') {
+        ruleElement.innerHTML = '+ mode：<br>Click numbers to make the numbers being added up equivalent to the row and column targets';
+    } else {
+        ruleElement.innerHTML = 'Ø mode：<br>Click numbers to make the numbers being added up equivalent to the row targets. The column operation = f(a, b) = min(a, b) + max(a, b)//min(a, b)';
+    }
+}
+        }
+
+        const game = new Game();
+        game.init();
+    </script>
 </body>
 </html>
