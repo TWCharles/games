@@ -167,6 +167,16 @@
                     return min + Math.floor(max / min);
                 });
             }
+			calculateØTarget(numbers) {
+				if (numbers.length === 0) return 0;
+				if (numbers.length === 1) return numbers[0];
+				
+				return numbers.reduce((acc, curr) => {
+					const min = Math.min(acc, curr);
+					const max = Math.max(acc, curr);
+					return min + Math.floor(max / min);
+				});
+			}
 
             initPlayerSelection() {
                 this.playerSelection = Array(this.size).fill().map(() => Array(this.size).fill(false));
@@ -174,22 +184,26 @@
             }
 
             calculateCurrentSums() {
-                let rowSums = Array(this.size).fill(0);
-                let colSums = Array(this.size).fill(0);
-                for (let i = 0; i < this.size; i++) {
-                    if (this.mode === '+') {
-                        rowSums[i] = this.playerSelectionOrder[i].reduce((a, b) => a + b, 0);
-                    } else {
-                        rowSums[i] = this.calculateØTarget(this.playerSelectionOrder[i]);
-                    }
-                    for (let j = 0; j < this.size; j++) {
-                        if (this.playerSelection[i][j]) {
-                            colSums[j] += this.matrixA[i][j];
-                        }
-                    }
-                }
-                return { rowSums, colSums };
-            }
+				let rowSums = Array(this.size).fill(0);
+				let colSums = Array(this.size).fill(0);
+				for (let i = 0; i < this.size; i++) {
+					rowSums[i] = this.mode === '+' ? 
+						this.playerSelectionOrder[i].reduce((a, b) => a + b, 0) : 
+						this.calculateØTarget(this.playerSelectionOrder[i]);
+				}
+				for (let j = 0; j < this.size; j++) {
+					let colNumbers = [];
+					for (let i = 0; i < this.size; i++) {
+						if (this.playerSelection[i][j]) {
+							colNumbers.push(this.matrixA[i][j]);
+						}
+					}
+					colSums[j] = this.mode === '+' ? 
+						colNumbers.reduce((a, b) => a + b, 0) : 
+						colNumbers.reduce((a, b) => a + b, 0);
+				}
+				return { rowSums, colSums };
+			}
 
             render() {
                 const { rowSums, colSums } = this.calculateCurrentSums();
@@ -220,21 +234,22 @@
             }
 
             toggleCell(row, col) {
-                if (!this.isWon) {
-                    if (this.playerSelection[row][col]) {
-                        this.playerSelection[row][col] = false;
-                        this.playerSelectionOrder[row] = this.playerSelectionOrder[row].filter(num => num !== this.matrixA[row][col]);
-                    } else {
-                        this.playerSelection[row][col] = true;
-                        this.playerSelectionOrder[row].push(this.matrixA[row][col]);
-                    }
-                    this.playerSelectionOrder[row] = this.playerSelectionOrder[row].sort((a, b) => 
-                        this.matrixB[row].indexOf(a) - this.matrixB[row].indexOf(b)
-                    );
-                    this.render();
-                    this.checkWin();
-                }
-            }
+				if (!this.isWon) {
+					if (this.playerSelection[row][col]) {
+						this.playerSelection[row][col] = false;
+						this.playerSelectionOrder[row] = this.playerSelectionOrder[row].filter(num => num !== this.matrixA[row][col]);
+					} else {
+						this.playerSelection[row][col] = true;
+						this.playerSelectionOrder[row].push(this.matrixA[row][col]);
+					}
+					// 移除這行，不要重新排序
+					// this.playerSelectionOrder[row] = this.playerSelectionOrder[row].sort((a, b) => 
+					//     this.matrixB[row].indexOf(a) - this.matrixB[row].indexOf(b)
+					// );
+					this.render();
+					this.checkWin();
+				}
+			}
 
             checkWin() {
                 const { rowSums, colSums } = this.calculateCurrentSums();
